@@ -21,12 +21,15 @@
       ph_done: 'Terminado', ph_active: 'En proceso', ph_pending: 'Por empezar', ph_blocked: 'Detenido',
       stages: 'Las etapas', show_all: 'Ver todas las etapas', hide_all: 'Ocultar',
       sel_h: 'Lo que falta que escojas', sel_none: 'No hay nada pendiente por escoger',
+      sel_g_due: 'PARA DECIDIR AHORA', sel_g_later: 'MÁS ADELANTE EN EL PROYECTO',
+      sel_g_done: 'YA DECIDIDO', sel_soon: 'Más adelante',
       sel_none_sub: 'Cuando haya algo que decidir, aparece aquí.',
       sel_due: 'Fecha límite', sel_budget: 'Presupuestado', sel_choose: 'Escoger',
       sel_change: 'Cambiar', sel_your: 'Escogiste', sel_ordered: 'Ya pedido', sel_done: 'Escogido',
       sel_days: 'Quedan {n} días', sel_day1: 'Queda 1 día', sel_today: 'Es hoy',
       sel_late: 'Vencida hace {n} días', sel_late1: 'Vencida hace 1 día',
       sel_installs: 'Se instala el {d}',
+      opt_upgrade: 'MEJORA',
       opt_pick: 'Escoger esta', opt_picked: 'Tu elección', opt_see: 'Ver',
       opt_none: 'Todavía no hay opciones cargadas', opt_none_sub: 'Proven las está armando. Si ya sabes qué quieres, propónla tú.',
       opt_mine: 'Propuesta tuya', opt_over: '{m} sobre el presupuesto', opt_under: '{m} por debajo',
@@ -59,12 +62,15 @@
       ph_done: 'Finished', ph_active: 'In progress', ph_pending: 'Not started', ph_blocked: 'On hold',
       stages: 'The stages', show_all: 'See all stages', hide_all: 'Hide',
       sel_h: 'What we need you to choose', sel_none: 'Nothing to choose right now',
+      sel_g_due: 'DUE FOR SELECTION', sel_g_later: 'SELECT LATER IN PROJECT',
+      sel_g_done: 'ALREADY DECIDED', sel_soon: 'Later',
       sel_none_sub: 'When there is something to decide, it shows up here.',
       sel_due: 'Deadline', sel_budget: 'Budgeted', sel_choose: 'Choose',
       sel_change: 'Change', sel_your: 'You chose', sel_ordered: 'Ordered', sel_done: 'Chosen',
       sel_days: '{n} days left', sel_day1: '1 day left', sel_today: 'Due today',
       sel_late: '{n} days overdue', sel_late1: '1 day overdue',
       sel_installs: 'Installs {d}',
+      opt_upgrade: 'UPGRADE',
       opt_pick: 'Choose this', opt_picked: 'Your choice', opt_see: 'View',
       opt_none: 'No options loaded yet', opt_none_sub: 'Proven is putting them together. If you already know what you want, suggest it.',
       opt_mine: 'Your suggestion', opt_over: '{m} over budget', opt_under: '{m} under',
@@ -311,8 +317,13 @@
 
   /* --- selecciones --- */
   function selectionsCard(sels, opts, urls, reload) {
-    var pend = sels.filter(function (s) { return s.status === 'pending'; });
-    var done = sels.filter(function (s) { return s.status !== 'pending'; });
+    /* Una selección está lista para decidir solo cuando ya tiene opciones cargadas.
+       Sin opciones el cliente no puede escoger nada: eso no es un pendiente suyo,
+       es un pendiente nuestro, y va en "más adelante" hasta que le subamos las opciones. */
+    function hasOpts(s) { return (opts[s.id] || []).length > 0; }
+    var dueNow = sels.filter(function (s) { return s.status === 'pending' && hasOpts(s); });
+    var later  = sels.filter(function (s) { return s.status === 'pending' && !hasOpts(s); });
+    var done   = sels.filter(function (s) { return s.status !== 'pending'; });
 
     /* El cliente ya no escribe a ciegas: ve las opciones con foto, link y precio.
        Si ninguna sirve, propone la suya y Proven le pone precio después. */
@@ -335,13 +346,19 @@
 
       function card(o) {
         var picked = s.chosen_option_id === o.id;
-        return h('div', { class: 'opt' + (picked ? ' on' : '') },
+        /* "extra" es el sobrecosto en palabras: '+$303 per door'. Va aparte del
+           precio porque no es lo que cuesta la opción, es lo que cuesta DE MÁS,
+           y confundir las dos cosas delante del cliente sale caro. */
+        var up = !!(o.extra && String(o.extra).trim());
+        return h('div', { class: 'opt' + (picked ? ' on' : '') + (up ? ' up' : '') },
           o.photo_path && urls[o.photo_path]
             ? h('img', { class: 'oph', src: urls[o.photo_path], alt: L(o, 'title'), loading: 'lazy' })
             : h('div', { class: 'oph none' }),
           h('div', { class: 'ob' },
+            up ? h('span', { class: 'chip bad up' }, t('opt_upgrade')) : null,
             h('b', null, L(o, 'title')),
             o.from_client ? h('span', { class: 'chip gold' }, t('opt_mine')) : null,
+            up ? h('div', { class: 'oextra' }, o.extra) : null,
             o.note ? h('small', null, o.note) : null,
             priceTag(o),
             h('div', { class: 'oact' },
@@ -404,31 +421,46 @@
       var m = modal(L(s, 'title'), box);
     }
 
-    function row(s) {
+    function row(s, isLater) {
       var d = s.due_on ? dueLabel(s.due_on) : null;
       var bits = [L(s, 'room'),
         s.install_on ? t('sel_installs', { d: fDate(dayOf(s.install_on), { month: 'short', day: 'numeric' }) }) : '',
         s.allowance != null ? t('sel_budget') + ' ' + money(s.allowance) : ''].filter(Boolean);
-      return h('div', { class: 'selrow' + (s.status === 'pending' ? '' : ' set') },
+      return h('div', { class: 'selrow' + (s.status === 'pending' ? '' : ' set') + (isLater ? ' later' : '') },
         h('div', { class: 'tx' },
           h('b', null, L(s, 'title')),
           bits.length ? h('small', null, bits.join(' · ')) : null,
           s.choice ? h('p', { class: 'mine' }, t('sel_your') + ': ' + s.choice) : null),
         h('div', { class: 'ra' },
           /* El plazo solo importa mientras falte escoger. Después estorba. */
-          s.status === 'ordered' ? h('span', { class: 'chip ok' }, t('sel_ordered'))
+          isLater ? h('span', { class: 'chip mut' }, t('sel_soon'))
+            : s.status === 'ordered' ? h('span', { class: 'chip ok' }, t('sel_ordered'))
             : s.status === 'chosen' ? h('span', { class: 'chip gold' }, t('sel_done'))
             : d ? h('span', { class: 'chip ' + (d.hot ? 'bad' : 'warn') }, d.txt) : null,
-          s.status === 'ordered' ? null
+          (isLater || s.status === 'ordered') ? null
             : h('button', { class: 'btn sm' + (s.status === 'pending' ? '' : ' ghost'), type: 'button',
                 onclick: function () { askFor(s); } }, s.status === 'pending' ? t('sel_choose') : t('sel_change'))));
     }
 
+    /* ojo: .map(row) le pasaría el índice como segundo argumento y la fila 0
+       quedaría distinta de las demás. Por eso cada grupo se envuelve a mano. */
+    function rows(list, isLater) {
+      return h('div', { class: 'sellist' + (isLater ? ' soon' : '') },
+        list.map(function (x) { return row(x, isLater); }));
+    }
+
     return h('section', { class: 'card' },
       h('h3', null, t('sel_h')),
-      pend.length ? h('div', { class: 'sellist' }, pend.map(row))
-        : h('div', { class: 'empty' }, h('p', null, t('sel_none')), h('small', null, t('sel_none_sub'))),
-      done.length ? h('div', { class: 'sellist muted' }, done.map(row)) : null);
+      dueNow.length ? h('h4', { class: 'selgrp due' }, t('sel_g_due')) : null,
+      dueNow.length ? rows(dueNow, false) : null,
+      later.length ? h('h4', { class: 'selgrp' }, t('sel_g_later')) : null,
+      later.length ? rows(later, true) : null,
+      (!dueNow.length && !later.length)
+        ? h('div', { class: 'empty' }, h('p', null, t('sel_none')), h('small', null, t('sel_none_sub')))
+        : null,
+      done.length ? h('h4', { class: 'selgrp' }, t('sel_g_done')) : null,
+      done.length ? h('div', { class: 'sellist muted' },
+        done.map(function (x) { return row(x, false); })) : null);
   }
 
   /* --- pagos --- */
