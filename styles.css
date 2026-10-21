@@ -188,3 +188,26 @@ main{max-width:var(--max);margin:0 auto;padding:18px 16px 70px;display:grid;gap:
 .ownbox>b{font-size:.92rem}
 .frm.own{margin-top:6px;padding:14px;background:#FCFBF8;border:1px solid var(--hair);border-radius:var(--r2)}
 .frm.own input[type=file]{padding:9px;background:#fff}
+
+/* --- grupos de selecciones: lo que toca decidir ya, y lo que viene después --- */
+.selgrp{font-size:.74rem;letter-spacing:.09em;text-transform:uppercase;font-weight:800;
+  color:var(--mut);margin:18px 0 8px}
+.selgrp:first-of-type{margin-top:10px}
+.selgrp.due{color:var(--bad);display:flex;align-items:center;gap:8px}
+.selgrp.due::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--bad);flex:none}
+.sellist.soon{opacity:.78}
+.selrow.later{background:#fff;border-style:dashed}
+.chip.mut{background:var(--hair);color:var(--mut)}
+
+/* --- la mejora se tiene que ver distinta de un vistazo --- */
+.opt.up{border:2px solid var(--bad);background:#FFF9F8}
+.opt.up.on{border-color:var(--ok);background:var(--okbg)}
+.chip.bad.up{align-self:start;letter-spacing:.07em}
+.oextra{color:var(--bad);font-size:1.22rem;font-weight:800;letter-spacing:-.015em;line-height:1.2}
+
+/* La foto es lo que decide: en el celular va ancha, no en un cuadrito. */
+@media (max-width:520px){
+  .opt{flex-direction:column}
+  .oph{width:100%;height:auto;aspect-ratio:16/10}
+}
+@media (min-width:521px){ .oph{width:104px;height:104px} }
