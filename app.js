@@ -115,6 +115,16 @@
     late.forEach(function (p) { el[p[0]] = p[1]; });
     return el;
   }
+  /* Negrita con **texto** dentro de las notas. Se arma con nodos de texto,
+     nunca con innerHTML: lo que venga de la base no puede inyectar nada. */
+  function rich(str) {
+    var parts = String(str == null ? '' : str).split('**'), out = [];
+    for (var i = 0; i < parts.length; i++) {
+      if (!parts[i]) continue;
+      out.push(i % 2 ? h('strong', null, parts[i]) : document.createTextNode(parts[i]));
+    }
+    return out;
+  }
   function add(el, k) {
     if (k == null || k === false) return;                       /* null NO se imprime */
     if (Array.isArray(k)) return k.forEach(function (x) { add(el, x); });
@@ -359,7 +369,7 @@
             h('b', null, L(o, 'title')),
             o.from_client ? h('span', { class: 'chip gold' }, t('opt_mine')) : null,
             up ? h('div', { class: 'oextra' }, o.extra) : null,
-            o.note ? h('small', null, o.note) : null,
+            o.note ? h('small', null, rich(o.note)) : null,
             priceTag(o),
             h('div', { class: 'oact' },
               o.link ? h('a', { class: 'lnk', href: o.link, target: '_blank', rel: 'noopener noreferrer' }, t('opt_see')) : null,

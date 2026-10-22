@@ -211,3 +211,6 @@ main{max-width:var(--max);margin:0 auto;padding:18px 16px 70px;display:grid;gap:
   .oph{width:100%;height:auto;aspect-ratio:16/10}
 }
 @media (min-width:521px){ .oph{width:104px;height:104px} }
+
+/* la negrita dentro de la nota tiene que pesar de verdad, no apenas marcarse */
+.ob small strong{font-weight:800;color:var(--ink)}
