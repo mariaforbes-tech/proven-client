@@ -19,5 +19,21 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
 <script src="config.js?v=20261028a"></script>
 <script src="app.js?v=20261028a"></script>
+<!-- Para que el portal se actualice solo, tambien desde un icono en la
+     pantalla de inicio. Ver sw.js. -->
+<script>
+(function () {
+  if (!('serviceWorker' in navigator)) return;
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('sw.js').catch(function () { /* sin drama */ });
+  });
+  var recargado = false;
+  navigator.serviceWorker.addEventListener('controllerchange', function () {
+    if (recargado) return;
+    recargado = true;
+    window.location.reload();
+  });
+})();
+</script>
 </body>
 </html>
