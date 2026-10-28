@@ -48,6 +48,21 @@
       upd_none_sub: 'Aquí van apareciendo las fotos de tu obra.',
       upd_write: 'Escribe un comentario…', upd_send: 'Enviar', upd_you: 'Tú',
       upd_team: 'Proven Solutions', save: 'Guardar', cancel: 'Cancelar', close: 'Cerrar',
+      doc_h: 'Tus documentos', doc_none: 'Todavía no hay documentos',
+      doc_none_sub: 'Aquí van a aparecer tu contrato, los change orders y tus facturas.',
+      doc_open: 'Abrir', doc_sign: 'Leer y firmar', doc_tosign: 'Falta tu firma',
+      doc_signed: 'Firmado', doc_signed_on: 'Firmado el {d} por {n}',
+      doc_amount: 'Valor', doc_dated: 'Emitido el {d}',
+      k_contract: 'Contrato', k_change_order: 'Change order',
+      k_invoice: 'Factura', k_receipt: 'Recibo', k_estimate: 'Estimado',
+      sign_h: 'Firmar el documento', sign_read: 'Ábrelo y léelo completo antes de firmar.',
+      sign_open: 'Abrir el documento', sign_name: 'Tu nombre completo, como aparece en el documento',
+      sign_consent: 'Acepto firmar este documento de forma electrónica y recibir mi copia por medios electrónicos. Entiendo que mi firma electrónica tiene el mismo valor legal que una firma a mano.',
+      sign_btn: 'Firmar', sign_ok: 'Firmado. Proven ya tiene tu firma.',
+      sign_need_name: 'Escribe tu nombre completo.',
+      sign_need_consent: 'Marca la casilla para poder firmar.',
+      sign_no_pdf: 'El documento todavía no se puede abrir. Escríbele a Proven.',
+      sign_keep: 'Después de firmar te queda la copia aquí mismo, con la fecha y la hora.',
     },
     en: {
       sign_in: 'Sign in', email: 'Email', pass: 'Password', sign_out: 'Sign out',
@@ -89,6 +104,21 @@
       upd_none_sub: 'Photos of your job will show up here.',
       upd_write: 'Write a comment…', upd_send: 'Send', upd_you: 'You',
       upd_team: 'Proven Solutions', save: 'Save', cancel: 'Cancel', close: 'Close',
+      doc_h: 'Your documents', doc_none: 'No documents yet',
+      doc_none_sub: 'Your contract, change orders and invoices will show up here.',
+      doc_open: 'Open', doc_sign: 'Read and sign', doc_tosign: 'Needs your signature',
+      doc_signed: 'Signed', doc_signed_on: 'Signed {d} by {n}',
+      doc_amount: 'Amount', doc_dated: 'Issued {d}',
+      k_contract: 'Contract', k_change_order: 'Change order',
+      k_invoice: 'Invoice', k_receipt: 'Receipt', k_estimate: 'Estimate',
+      sign_h: 'Sign the document', sign_read: 'Open it and read it in full before signing.',
+      sign_open: 'Open the document', sign_name: 'Your full legal name, as it appears on the document',
+      sign_consent: 'I agree to sign this document electronically and to receive my copy electronically. I understand my electronic signature has the same legal effect as a handwritten one.',
+      sign_btn: 'Sign', sign_ok: 'Signed. Proven has your signature.',
+      sign_need_name: 'Type your full name.',
+      sign_need_consent: 'Check the box to sign.',
+      sign_no_pdf: 'This document cannot be opened yet. Message Proven.',
+      sign_keep: 'After you sign, your copy stays right here, with the date and time.',
     }
   };
   var lang = (localStorage.getItem('pc_lang') || (navigator.language || 'es').slice(0, 2));
@@ -501,6 +531,85 @@
         })));
   }
 
+  /* --- documentos: leer y firmar ---
+     Lo que se firma es el contrato y los change orders. Las facturas y los
+     recibos solo se leen. La firma queda guardada con la fecha, la hora y
+     el usuario que entró: eso es lo que la hace válida si algún día hay que
+     mostrarla. */
+  var FIRMABLES = { contract: 1, change_order: 1 };
+
+  function signModal(d, url, reload) {
+    var name = h('input', { required: true, autocomplete: 'name', placeholder: ' ' });
+    var ok = h('input', { type: 'checkbox' });
+    var err = h('p', { class: 'err', role: 'alert' });
+    var btn = h('button', { class: 'btn', type: 'submit' }, t('sign_btn'));
+
+    var form = h('form', { class: 'frm', onsubmit: function (e) {
+      e.preventDefault(); fill(err);
+      if (!ok.checked) { fill(err, t('sign_need_consent')); return; }
+      var n = name.value.trim();
+      if (n.length < 3) { fill(err, t('sign_need_name')); return; }
+      busy(btn, true);
+      sb.rpc('sign_document', { p_doc: d.id, p_name: n, p_consent: true })
+        .then(function (r) {
+          busy(btn, false);
+          if (r.error) { fill(err, r.error.message || t('err')); return; }
+          m.close(); toast(t('sign_ok')); reload();
+        })
+        .catch(function (x) { busy(btn, false); fill(err, (x && x.message) || t('err')); });
+    } },
+      h('p', { class: 'mut' }, t('sign_read')),
+      url ? h('a', { class: 'btn ghost wide', href: url, target: '_blank', rel: 'noopener noreferrer' },
+        t('sign_open')) : h('p', { class: 'err' }, t('sign_no_pdf')),
+      h('label', { class: 'fld' }, h('span', null, t('sign_name')), name),
+      h('label', { class: 'cons' }, ok, h('span', null, t('sign_consent'))),
+      h('p', { class: 'mut sm' }, t('sign_keep')),
+      err, btn);
+
+    var m = modal(t('sign_h') + ' · ' + d.number, form);
+    return m;
+  }
+
+  function documentsCard(docs, urls, reload) {
+    if (!docs.length) {
+      return h('section', { class: 'card' }, h('h3', null, t('doc_h')),
+        h('div', { class: 'empty' }, h('p', null, t('doc_none')), h('small', null, t('doc_none_sub'))));
+    }
+    /* Primero lo que falta firmar, después lo demás por fecha. */
+    function urge(d) { return (FIRMABLES[d.kind] && d.status !== 'signed' && d.status !== 'void') ? 0 : 1; }
+    var list = docs.slice().sort(function (a, b) {
+      if (urge(a) !== urge(b)) return urge(a) - urge(b);
+      return String(b.issued_on || b.created_at || '').localeCompare(String(a.issued_on || a.created_at || ''));
+    });
+    return h('section', { class: 'card' },
+      h('h3', null, t('doc_h')),
+      h('div', { class: 'doclist' }, list.map(function (d) {
+        var url = d.pdf_path ? urls[d.pdf_path] : null;
+        var firmable = FIRMABLES[d.kind] && d.status !== 'signed' && d.status !== 'void';
+        /* El número va en la línea chica: en un teléfono, pegado al título
+           parte la palabra en dos y se lee como un error. */
+        var bits = [d.number,
+          d.issued_on ? t('doc_dated', { d: fDate(dayOf(d.issued_on)) }) : '',
+          d.total != null ? t('doc_amount') + ' ' + money(d.total) : ''].filter(Boolean);
+        return h('div', { class: 'docrow' + (firmable ? ' tosign' : '') },
+          h('div', { class: 'tx' },
+            h('b', null, t('k_' + d.kind)),
+            bits.length ? h('small', null, bits.join(' · ')) : null,
+            d.signed_at ? h('p', { class: 'mine' }, t('doc_signed_on', {
+              d: fDate(d.signed_at, { month: 'long', day: 'numeric', year: 'numeric',
+                hour: 'numeric', minute: '2-digit' }),
+              n: d.signed_name || '' })) : null),
+          h('div', { class: 'ra' },
+            d.status === 'signed' ? h('span', { class: 'chip ok' }, t('doc_signed'))
+              : firmable ? h('span', { class: 'chip bad' }, t('doc_tosign')) : null,
+            firmable
+              ? h('button', { class: 'btn sm', type: 'button',
+                  onclick: function () { signModal(d, url, reload); } }, t('doc_sign'))
+              : url ? h('a', { class: 'btn sm ghost', href: url, target: '_blank', rel: 'noopener noreferrer' },
+                  t('doc_open')) : null));
+      })));
+  }
+
   /* --- avances y fotos --- */
   function updatesCard(msgs, urls, project, reload) {
     var txt = h('textarea', { rows: 2, placeholder: t('upd_write'), 'aria-label': t('upd_write') });
@@ -557,12 +666,18 @@
         sb.from('selections').select('*').eq('project_id', project.id),
         sb.from('client_payments').select('*').eq('project_id', project.id),
         sb.from('messages').select('*').eq('project_id', project.id),
-        sb.from('selection_options').select('*')
+        sb.from('selection_options').select('*'),
+        /* Si todavía no se ha corrido el SQL de documentos, esto falla y no
+           pasa nada: la tarjeta simplemente no sale. */
+        sb.from('documents').select('*').eq('project_id', project.id)
+          .then(function (r) { return r.error ? { data: [] } : r; },
+                function () { return { data: [] }; })
       ]);
     }).then(function (res) {
       if (!res) return;
       var phases = res[0].data || [], sels = res[1].data || [],
-          pays = res[2].data || [], msgs = res[3].data || [];
+          pays = res[2].data || [], msgs = res[3].data || [],
+          docs = (res[5] && res[5].data) || [];
       /* las opciones, agrupadas por selección */
       var opts = {};
       (res[4].data || []).forEach(function (o) {
@@ -570,6 +685,7 @@
       });
       var paths = msgs.map(function (m) { return m.file_path; })
         .concat((res[4].data || []).map(function (o) { return o.photo_path; }))
+        .concat(docs.map(function (d) { return d.pdf_path; }))
         .filter(Boolean);
       var p = paths.length
         ? sb.storage.from('project-files').createSignedUrls(paths, 3600)
@@ -577,10 +693,19 @@
       return p.then(function (su) {
         var urls = {};
         (su.data || []).forEach(function (x) { if (x.signedUrl) urls[x.path] = x.signedUrl; });
+        /* Un contrato sin firmar es lo más urgente que puede haber en esta
+           pantalla: va arriba. Si no hay nada que firmar, los documentos
+           van junto a los pagos, que es donde el cliente los busca. */
+        var pendiente = docs.some(function (d) {
+          return FIRMABLES[d.kind] && d.status !== 'signed' && d.status !== 'void';
+        });
+        var dcard = docs.length ? documentsCard(docs, urls, load) : null;
         fill(main,
           heroCard(project, phases),
+          pendiente ? dcard : null,
           selectionsCard(sels, opts, urls, load),
           paymentsCard(pays),
+          pendiente ? null : dcard,
           updatesCard(msgs, urls, project, load),
           stagesCard(phases));
       });
