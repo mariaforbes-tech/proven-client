@@ -31,6 +31,7 @@
       sel_installs: 'Se instala el {d}',
       opt_upgrade: 'MEJORA',
       opt_pick: 'Escoger esta', opt_picked: 'Tu elección', opt_see: 'Ver',
+      opt_zoom: 'Toca para verla en grande',
       opt_none: 'Todavía no hay opciones cargadas', opt_none_sub: 'Proven las está armando. Si ya sabes qué quieres, propónla tú.',
       opt_mine: 'Propuesta tuya', opt_over: '{m} sobre el presupuesto', opt_under: '{m} por debajo',
       opt_own_h: '¿Ninguna te convence?', opt_own_b: 'Proponer la mía',
@@ -87,6 +88,7 @@
       sel_installs: 'Installs {d}',
       opt_upgrade: 'UPGRADE',
       opt_pick: 'Choose this', opt_picked: 'Your choice', opt_see: 'View',
+      opt_zoom: 'Tap to see it large',
       opt_none: 'No options loaded yet', opt_none_sub: 'Proven is putting them together. If you already know what you want, suggest it.',
       opt_mine: 'Your suggestion', opt_over: '{m} over budget', opt_under: '{m} under',
       opt_own_h: 'None of these work?', opt_own_b: 'Suggest my own',
@@ -248,6 +250,20 @@
     if (f) f.focus();
     return { close: close };
   }
+  /* La foto de una opción, en grande.
+     Una muestra de baldosa se entiende en una miniatura. Un render de la
+     cocina no: en 84 píxeles no se ve si hay spice rack o no, que es
+     justamente lo que se está decidiendo. Tocar la foto la abre completa. */
+  function bigPhoto(src, alt) {
+    var back = h('div', { class: 'phback', onclick: function () { close(); } },
+      h('button', { class: 'x', type: 'button', 'aria-label': t('close') }, '×'),
+      h('img', { class: 'bigph', src: src, alt: alt || '' }));
+    function close() { back.remove(); document.removeEventListener('keydown', esc); }
+    function esc(e) { if (e.key === 'Escape') close(); }
+    document.addEventListener('keydown', esc);
+    document.body.appendChild(back);
+  }
+
   function busy(btn, on) {
     if (!btn) return;
     btn.disabled = !!on;
@@ -392,7 +408,14 @@
         var up = !!(o.extra && String(o.extra).trim());
         return h('div', { class: 'opt' + (picked ? ' on' : '') + (up ? ' up' : '') },
           o.photo_path && urls[o.photo_path]
-            ? h('img', { class: 'oph', src: urls[o.photo_path], alt: L(o, 'title'), loading: 'lazy' })
+            ? h('img', { class: 'oph zoom', src: urls[o.photo_path], alt: L(o, 'title'),
+                loading: 'lazy', tabindex: '0', role: 'button', title: t('opt_zoom'),
+                onclick: function () { bigPhoto(urls[o.photo_path], L(o, 'title')); },
+                onkeydown: function (e) {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault(); bigPhoto(urls[o.photo_path], L(o, 'title'));
+                  }
+                } })
             : h('div', { class: 'oph none' }),
           h('div', { class: 'ob' },
             up ? h('span', { class: 'chip bad up' }, t('opt_upgrade')) : null,
