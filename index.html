@@ -27,12 +27,9 @@
   window.addEventListener('load', function () {
     navigator.serviceWorker.register('sw.js').catch(function () { /* sin drama */ });
   });
-  var recargado = false;
-  navigator.serviceWorker.addEventListener('controllerchange', function () {
-    if (recargado) return;
-    recargado = true;
-    window.location.reload();
-  });
+  /* Sin recarga automatica: recargar a mitad de sesion corta las
+     peticiones en vuelo. La version fresca entra en el siguiente
+     arranque. */
 })();
 </script>
 </body>
