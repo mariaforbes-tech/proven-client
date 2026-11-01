@@ -32,6 +32,7 @@
       opt_upgrade: 'MEJORA',
       opt_pick: 'Escoger esta', opt_picked: 'Tu elección', opt_see: 'Ver',
       opt_zoom: 'Toca para verla en grande',
+      opt_cmp: 'Comparar lado a lado', opt_cmp_sub: 'Toca una foto para verla completa',
       opt_none: 'Todavía no hay opciones cargadas', opt_none_sub: 'Proven las está armando. Si ya sabes qué quieres, propónla tú.',
       opt_mine: 'Propuesta tuya', opt_over: '{m} sobre el presupuesto', opt_under: '{m} por debajo',
       opt_own_h: '¿Ninguna te convence?', opt_own_b: 'Proponer la mía',
@@ -89,6 +90,7 @@
       opt_upgrade: 'UPGRADE',
       opt_pick: 'Choose this', opt_picked: 'Your choice', opt_see: 'View',
       opt_zoom: 'Tap to see it large',
+      opt_cmp: 'Compare side by side', opt_cmp_sub: 'Tap a photo to see it full size',
       opt_none: 'No options loaded yet', opt_none_sub: 'Proven is putting them together. If you already know what you want, suggest it.',
       opt_mine: 'Your suggestion', opt_over: '{m} over budget', opt_under: '{m} under',
       opt_own_h: 'None of these work?', opt_own_b: 'Suggest my own',
@@ -400,6 +402,18 @@
         return h('div', { class: 'oprice' }, bits);
       }
 
+      /* Escoger una opción. Se usa desde la lista y desde el comparador, así
+         que vive aparte: si se escoge desde el comparador hay que cerrar las
+         dos capas, no solo la de arriba. */
+      function pick(o, btn, extraClose) {
+        busy(btn, true);
+        sb.rpc('client_pick_option', { p_option: o.id }).then(function (r) {
+          if (r.error) { busy(btn, false); toast(r.error.message || t('err'), true); return; }
+          if (extraClose) extraClose();
+          m.close(); toast(t('sel_saved')); reload();
+        });
+      }
+
       function card(o) {
         var picked = s.chosen_option_id === o.id;
         /* "extra" es el sobrecosto en palabras: '+$303 per door'. Va aparte del
@@ -428,12 +442,49 @@
               o.link ? h('a', { class: 'lnk', href: o.link, target: '_blank', rel: 'noopener noreferrer' }, t('opt_see')) : null,
               picked ? h('span', { class: 'chip ok' }, t('opt_picked'))
                 : h('button', { class: 'btn sm', type: 'button', onclick: function (e) {
-                    busy(e.currentTarget, true);
-                    sb.rpc('client_pick_option', { p_option: o.id }).then(function (r) {
-                      if (r.error) { busy(e.currentTarget, false); toast(r.error.message || t('err'), true); return; }
-                      m.close(); toast(t('sel_saved')); reload();
-                    });
+                    pick(o, e.currentTarget);
                   } }, t('opt_pick')))));
+      }
+
+      /* --- comparar lado a lado ---
+         Dos renders de la misma cocina solo se distinguen poniéndolos uno
+         junto al otro. En la lista van uno debajo del otro y la diferencia
+         —seis pulgadas de cabinet— se pierde al hacer scroll. */
+      var conFoto = mine.filter(function (o) { return o.photo_path && urls[o.photo_path]; });
+
+      function compare() {
+        function cerrar() { back.remove(); document.removeEventListener('keydown', esc); }
+        function esc(e) { if (e.key === 'Escape') cerrar(); }
+
+        function col(o) {
+          var picked = s.chosen_option_id === o.id;
+          var up = !!(o.extra && String(o.extra).trim());
+          return h('div', { class: 'cmpcol' + (picked ? ' on' : '') },
+            h('img', { class: 'cmpimg', src: urls[o.photo_path], alt: L(o, 'title'),
+              title: t('opt_zoom'), loading: 'lazy',
+              onclick: function () { bigPhoto(urls[o.photo_path], L(o, 'title')); } }),
+            h('div', { class: 'cmptx' },
+              up ? h('span', { class: 'chip bad up' }, t('opt_upgrade')) : null,
+              h('b', null, L(o, 'title')),
+              up ? h('div', { class: 'oextra' }, o.extra) : null,
+              o.price != null ? h('div', { class: 'oprice' }, h('b', null, money(o.price))) : null,
+              o.note ? h('small', null, rich(o.note)) : null,
+              picked ? h('span', { class: 'chip ok' }, t('opt_picked'))
+                : h('button', { class: 'btn sm wide', type: 'button', onclick: function (e) {
+                    pick(o, e.currentTarget, cerrar);
+                  } }, t('opt_pick'))));
+        }
+
+        var back = h('div', { class: 'cmpback', onclick: function (e) { if (e.target === back) cerrar(); } },
+          h('div', { class: 'cmpbox', role: 'dialog', 'aria-modal': 'true' },
+            h('div', { class: 'cmph' },
+              h('div', null, h('b', null, L(s, 'title')), h('small', null, t('opt_cmp_sub'))),
+              h('button', { class: 'x', type: 'button', 'aria-label': t('close'),
+                onclick: cerrar }, '×')),
+            h('div', { class: 'cmpcols' }, conFoto.map(col))));
+
+        document.addEventListener('keydown', esc);
+        document.body.appendChild(back);
       }
 
       /* --- proponer la suya --- */
@@ -477,6 +528,8 @@
 
       fill(box,
         s.allowance != null ? h('p', { class: 'mut sm bud' }, t('sel_budget') + ': ' + money(s.allowance)) : null,
+        conFoto.length > 1 ? h('button', { class: 'btn ghost wide cmpb', type: 'button',
+          onclick: compare }, t('opt_cmp')) : null,
         mine.length ? h('div', { class: 'opts' }, mine.map(card))
           : h('div', { class: 'empty' }, h('p', null, t('opt_none')), h('small', null, t('opt_none_sub'))),
         h('div', { class: 'ownbox' }, h('b', null, t('opt_own_h')), openOwn, own));
