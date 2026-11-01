@@ -33,6 +33,7 @@
       opt_pick: 'Escoger esta', opt_picked: 'Tu elección', opt_see: 'Ver',
       opt_zoom: 'Toca para verla en grande',
       opt_cmp: 'Comparar lado a lado', opt_cmp_sub: 'Toca una foto para verla completa',
+      opt_ref: 'Referencia',
       opt_none: 'Todavía no hay opciones cargadas', opt_none_sub: 'Proven las está armando. Si ya sabes qué quieres, propónla tú.',
       opt_mine: 'Propuesta tuya', opt_over: '{m} sobre el presupuesto', opt_under: '{m} por debajo',
       opt_own_h: '¿Ninguna te convence?', opt_own_b: 'Proponer la mía',
@@ -91,6 +92,7 @@
       opt_pick: 'Choose this', opt_picked: 'Your choice', opt_see: 'View',
       opt_zoom: 'Tap to see it large',
       opt_cmp: 'Compare side by side', opt_cmp_sub: 'Tap a photo to see it full size',
+      opt_ref: 'Reference',
       opt_none: 'No options loaded yet', opt_none_sub: 'Proven is putting them together. If you already know what you want, suggest it.',
       opt_mine: 'Your suggestion', opt_over: '{m} over budget', opt_under: '{m} under',
       opt_own_h: 'None of these work?', opt_own_b: 'Suggest my own',
@@ -378,7 +380,11 @@
     /* Una selección está lista para decidir solo cuando ya tiene opciones cargadas.
        Sin opciones el cliente no puede escoger nada: eso no es un pendiente suyo,
        es un pendiente nuestro, y va en "más adelante" hasta que le subamos las opciones. */
-    function hasOpts(s) { return (opts[s.id] || []).length > 0; }
+    /* Una foto de referencia -el antes, un detalle- no es algo que el
+       cliente pueda escoger. Si una seleccion solo tiene referencias,
+       todavia no hay nada que decidir. */
+    function pickable(o) { return !o.reference; }
+    function hasOpts(s) { return (opts[s.id] || []).filter(pickable).length > 0; }
     var dueNow = sels.filter(function (s) { return s.status === 'pending' && hasOpts(s); });
     var later  = sels.filter(function (s) { return s.status === 'pending' && !hasOpts(s); });
     var done   = sels.filter(function (s) { return s.status !== 'pending'; });
@@ -440,7 +446,8 @@
             priceTag(o),
             h('div', { class: 'oact' },
               o.link ? h('a', { class: 'lnk', href: o.link, target: '_blank', rel: 'noopener noreferrer' }, t('opt_see')) : null,
-              picked ? h('span', { class: 'chip ok' }, t('opt_picked'))
+              o.reference ? h('span', { class: 'chip mut' }, t('opt_ref'))
+                : picked ? h('span', { class: 'chip ok' }, t('opt_picked'))
                 : h('button', { class: 'btn sm', type: 'button', onclick: function (e) {
                     pick(o, e.currentTarget);
                   } }, t('opt_pick')))));
@@ -469,7 +476,8 @@
               up ? h('div', { class: 'oextra' }, o.extra) : null,
               o.price != null ? h('div', { class: 'oprice' }, h('b', null, money(o.price))) : null,
               o.note ? h('small', null, rich(o.note)) : null,
-              picked ? h('span', { class: 'chip ok' }, t('opt_picked'))
+              o.reference ? h('span', { class: 'chip mut' }, t('opt_ref'))
+                : picked ? h('span', { class: 'chip ok' }, t('opt_picked'))
                 : h('button', { class: 'btn sm wide', type: 'button', onclick: function (e) {
                     pick(o, e.currentTarget, cerrar);
                   } }, t('opt_pick'))));
