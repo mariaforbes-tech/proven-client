@@ -34,6 +34,9 @@
       opt_zoom: 'Toca para verla en grande',
       opt_cmp: 'Comparar lado a lado', opt_cmp_sub: 'Toca una foto para verla completa',
       opt_ref: 'Referencia',
+      pal_pick: 'Escoger color', pal_change: 'Cambiar', pal_back: 'Atrás',
+      pal_sub: 'Toca un color para este espacio.',
+      pal_saved: 'Listo, color guardado.',
       opt_none: 'Todavía no hay opciones cargadas', opt_none_sub: 'Proven las está armando. Si ya sabes qué quieres, propónla tú.',
       opt_mine: 'Propuesta tuya', opt_over: '{m} sobre el presupuesto', opt_under: '{m} por debajo',
       opt_own_h: '¿Ninguna te convence?', opt_own_b: 'Proponer la mía',
@@ -93,6 +96,9 @@
       opt_zoom: 'Tap to see it large',
       opt_cmp: 'Compare side by side', opt_cmp_sub: 'Tap a photo to see it full size',
       opt_ref: 'Reference',
+      pal_pick: 'Choose color', pal_change: 'Change', pal_back: 'Back',
+      pal_sub: 'Tap a color for this space.',
+      pal_saved: 'Saved.',
       opt_none: 'No options loaded yet', opt_none_sub: 'Proven is putting them together. If you already know what you want, suggest it.',
       opt_mine: 'Your suggestion', opt_over: '{m} over budget', opt_under: '{m} under',
       opt_own_h: 'None of these work?', opt_own_b: 'Suggest my own',
@@ -376,6 +382,15 @@
   }
 
   /* --- selecciones --- */
+  /* --- cartas de color ---
+     Una carta de 61 colores no cabe como opciones una por una: serían 61
+     tarjetas por cuarto, siete veces. Entonces la opción es el CUARTO y la
+     carta se abre encima, como el muestrario de carton que uno lleva a la
+     obra. El color escogido se guarda en la opción, no en la selección,
+     porque aquí hay siete respuestas y no una. */
+  var PALETA_BEHR = [{g:'Whites',c:[['Ultra Pure White','UPW','#F8F9F3'],['Sleek White','OR-W15','#FAF6E9'],['White Veil','OR-W14','#F7F1E3'],['Linen White','70','#F7EDD8'],['Cotton Sheets','RD-W15','#F7EBDD'],['Polar Bear','75','#F5F4EC'],['Simply White','BWC-01','#F5F1E4'],['Whisper White','HDC-MD-08','#F4F3EA'],['Bit of Sugar','PR-W14','#F4F2EC'],['Palais White','GR-W15','#F4F0E5'],['Delicate Lace','PPU5-11','#F3E6D4'],['Cottage White','13','#F3E9D6'],['New House White','RD-W10','#F1EDE7'],['Swiss Coffee','12','#F1EDE0'],['Bakery Box','BL-W09','#F0F4F2'],['Frost','57','#EFF0EC'],['Silky White','PPU7-12','#EEEBE2'],['White','52','#EBEBE6'],['Navajo White','22','#EBDEC4'],['Cameo White','MQ3-32','#EBE8E2'],['Vibrant White','BWC-12','#EAEDEB'],['Smoky White','BWC-13','#E9E4DA'],['Antique White','23','#E8DDCA'],['Off White','73','#E7E2D2'],['White Mocha','OR-W11','#E7DCCC'],['Swirling Water','PR-W10','#E6E9E9'],['Painter\'s White','PPU18-08','#E5E2DA'],['Cotton Knit','PPU7-11','#E5DFD2'],['Winds Breath','GR-W06','#E0E1DA'],['Silver Ash','GR-W11','#DDDBD0'],['Spanish Sand','OR-W07','#DCD0BD']]},{g:'Light greys',c:[['Silver Feather','BWC-29','#DBDCD3'],['Drizzle','PPU26-14','#D9DCDB'],['Gray View','DC-014','#D3D1C8'],['Platinum','PPU26-11','#D1D4D1'],['White Metal','N520-1','#D1D1CF'],['Chic Gray','PPU26-10','#CFCCC5'],['Dolphin Fin','790C-3','#CCCAC1'],['Silver Bullet','N520-2','#C5C5C3'],['Natural Gray','PPU18-10','#C4C0BB'],['Grey Mist','HDC-CT-21','#BDB6AB'],['Classic Silver','PPU18-11','#B9B9B4'],['Lunar Surface','N460-3','#B6B9B6'],['Flannel Gray','N520-3','#AEADAC'],['Tin Foil','N500-3','#ACB0B0'],['Elemental Gray','PPU26-06','#A0A09F']]},{g:'Warm neutrals',c:[['Roman Plaster','PPU7-10','#DDD2BF'],['Loft Light','MQ3-09','#DCCAB7'],['Plateau','PPU4-08','#DBC4AA'],['Dove','HDC-MD-21','#D9D4CB'],['Baja','PPU7-08','#D2C1A8'],['Wheat Bread','720C-3','#CDC4B7'],['Sculptor Clay','PPU5-08','#CCC3B4'],['Creamy Mushroom','PPU5-13','#CABDAE'],['Basswood','MQ2-46','#C9B196'],['Riviera Beach','PPU7-07','#C0AE96'],['Smokestack','N220-3','#BEB2A5'],['Perfect Taupe','PPU18-13','#B6ACA0'],['Midtown','MQ2-47','#B5A18A'],['Rustic Taupe','N200-4','#A69C91'],['Fashion Gray','PPU18-15','#A29C94']]}];
+  var PALETAS = { 'behr-light': PALETA_BEHR };
+
   function selectionsCard(sels, opts, urls, reload) {
     /* Una selección está lista para decidir solo cuando ya tiene opciones cargadas.
        Sin opciones el cliente no puede escoger nada: eso no es un pendiente suyo,
@@ -444,13 +459,79 @@
             up ? h('div', { class: 'oextra' }, o.extra) : null,
             o.note ? h('small', null, rich(o.note)) : null,
             priceTag(o),
+            o.palette && o.choice
+              ? h('div', { class: 'ochoice' },
+                  h('span', { class: 'osw', style: 'background:' + (hexDe(o.palette, o.choice) || '#ccc') }),
+                  h('span', null, o.choice))
+              : null,
             h('div', { class: 'oact' },
               o.link ? h('a', { class: 'lnk', href: o.link, target: '_blank', rel: 'noopener noreferrer' }, t('opt_see')) : null,
-              o.reference ? h('span', { class: 'chip mut' }, t('opt_ref'))
+              /* Una opción con carta no se escoge: se le escoge un color
+                 adentro. El botón abre la carta, no decide nada todavía. */
+              o.palette ? h('button', { class: 'btn sm' + (o.choice ? ' ghost' : ''), type: 'button',
+                  onclick: function () { abrirCarta(o); } },
+                  o.choice ? t('pal_change') : t('pal_pick'))
+                : o.reference ? h('span', { class: 'chip mut' }, t('opt_ref'))
                 : picked ? h('span', { class: 'chip ok' }, t('opt_picked'))
                 : h('button', { class: 'btn sm', type: 'button', onclick: function (e) {
                     pick(o, e.currentTarget);
                   } }, t('opt_pick')))));
+      }
+
+      function hexDe(pal, nombre) {
+        var grupos = PALETAS[pal] || [];
+        for (var i = 0; i < grupos.length; i++) {
+          for (var j = 0; j < grupos[i].c.length; j++) {
+            var c = grupos[i].c[j];
+            if (nombre === c[0] + ' ' + c[1] || nombre === c[0]) return c[2];
+          }
+        }
+        return null;
+      }
+
+      /* La carta se abre encima de la lista de cuartos: se escoge, o se
+         vuelve atrás sin tocar nada, o se cierra todo. */
+      function abrirCarta(o) {
+        var grupos = PALETAS[o.palette] || [];
+        function cerrar() { back.remove(); document.removeEventListener('keydown', esc); }
+        function esc(e) { if (e.key === 'Escape') cerrar(); }
+
+        function chip(c) {
+          var mio = o.choice === c[0] + ' ' + c[1];
+          return h('button', {
+            class: 'pchip' + (mio ? ' on' : ''), type: 'button',
+            'aria-pressed': mio ? 'true' : 'false',
+            onclick: function (e) {
+              var b = e.currentTarget;
+              busy(b, true);
+              sb.rpc('client_set_option_choice', {
+                p_option: o.id, p_choice: c[0] + ' ' + c[1]
+              }).then(function (r) {
+                if (r.error) { busy(b, false); toast(r.error.message || t('err'), true); return; }
+                cerrar(); m.close(); toast(t('pal_saved')); reload();
+              });
+            }
+          },
+            h('span', { class: 'psw', style: 'background:' + c[2] }),
+            h('span', { class: 'pnm' }, c[0]),
+            h('span', { class: 'pcd' }, c[1]));
+        }
+
+        var back = h('div', { class: 'cmpback', onclick: function (e) { if (e.target === back) cerrar(); } },
+          h('div', { class: 'cmpbox palbox', role: 'dialog', 'aria-modal': 'true' },
+            h('div', { class: 'cmph' },
+              h('div', null, h('b', null, L(o, 'title')), h('small', null, t('pal_sub'))),
+              h('button', { class: 'x', type: 'button', 'aria-label': t('close'), onclick: cerrar }, '×')),
+            h('div', { class: 'palbody' }, grupos.map(function (g) {
+              return h('div', { class: 'palgrp' },
+                h('h5', null, g.g),
+                h('div', { class: 'palgrid' }, g.c.map(chip)));
+            })),
+            h('div', { class: 'palfoot' },
+              h('button', { class: 'btn ghost sm', type: 'button', onclick: cerrar }, t('pal_back')))));
+
+        document.addEventListener('keydown', esc);
+        document.body.appendChild(back);
       }
 
       /* --- comparar lado a lado ---
