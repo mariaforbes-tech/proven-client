@@ -451,6 +451,9 @@
                     e.preventDefault(); bigPhoto(urls[o.photo_path], L(o, 'title'));
                   }
                 } })
+            /* Un cuarto no tiene foto que mostrar: el color se ve en la
+               carta. El hueco rayado del "sin foto" solo ocupa espacio. */
+            : o.palette ? null
             : h('div', { class: 'oph none' }),
           h('div', { class: 'ob' },
             up ? h('span', { class: 'chip bad up' }, t('opt_upgrade')) : null,
