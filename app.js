@@ -383,15 +383,8 @@
     /* Una foto de referencia -el antes, un detalle- no es algo que el
        cliente pueda escoger. Si una seleccion solo tiene referencias,
        todavia no hay nada que decidir. */
-    /* Pero una referencia CON link sí da algo que hacer: ir a verla y
-       volver. Es como se le muestran las cartas de color y los catálogos,
-       que son demasiado grandes para caber aquí como opciones una por una.
-       Sin link, una referencia sola sigue sin ser una decisión suya. */
     function pickable(o) { return !o.reference; }
-    function conLink(o) { return !!(o.link && String(o.link).trim()); }
-    function hasOpts(s) {
-      return (opts[s.id] || []).filter(function (o) { return pickable(o) || conLink(o); }).length > 0;
-    }
+    function hasOpts(s) { return (opts[s.id] || []).filter(pickable).length > 0; }
     var dueNow = sels.filter(function (s) { return s.status === 'pending' && hasOpts(s); });
     var later  = sels.filter(function (s) { return s.status === 'pending' && !hasOpts(s); });
     var done   = sels.filter(function (s) { return s.status !== 'pending'; });
