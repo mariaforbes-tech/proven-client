@@ -307,3 +307,19 @@ main{max-width:var(--max);margin:0 auto;padding:18px 16px 70px;display:grid;gap:
 /* Un cuarto sin foto ocupa todo el ancho: la fila queda en una linea
    limpia, nombre y boton, sin el hueco donde iria la imagen. */
 .opt .ob:only-child{flex:1 1 auto;min-width:0}
+
+/* --- fotos de la obra ---
+   Cuadricula de miniaturas cuadradas: la obra se mira, no se lee. Cada
+   una abre la foto completa en otra pestana. */
+.phsec{margin-top:14px}
+.phsec:first-of-type{margin-top:2px}
+.phgrid{display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+.phcard{display:block;border:1px solid var(--hair);border-radius:var(--r2);
+  overflow:hidden;background:#FCFBF8;text-decoration:none}
+.phcard img{display:block;width:100%;height:150px;object-fit:cover}
+.phcard.doc{display:flex;align-items:center;justify-content:center;min-height:92px;
+  padding:12px;text-align:center;font-size:.84rem;font-weight:600;color:var(--ink)}
+@media (max-width:520px){
+  .phgrid{grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:7px}
+  .phcard img{height:118px}
+}

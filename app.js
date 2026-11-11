@@ -50,6 +50,10 @@
       sel_saved: 'Guardado. Proven ya lo ve.',
       pay_h: 'Tus pagos', pay_paid: 'Pagado', pay_due: 'Pendiente', pay_next: 'Próximo pago',
       pay_on: 'Pagado el {d}', pay_by: 'Para el {d}', pay_none: 'Todavía no hay pagos registrados',
+      ph_h: 'Fotos de la obra', ph_none: 'Todavía no hay fotos',
+      ph_none_sub: 'Aquí van apareciendo las fotos del avance, día por día.',
+      ph_plan: 'Planos', ph_before: 'Antes', ph_during: 'Avance',
+      ph_after: 'Terminado', ph_doc: 'Documentos',
       upd_h: 'Avances', upd_none: 'Todavía no hay fotos ni novedades',
       upd_none_sub: 'Aquí van apareciendo las fotos de tu obra.',
       upd_write: 'Escribe un comentario…', upd_send: 'Enviar', upd_you: 'Tú',
@@ -112,6 +116,10 @@
       sel_saved: 'Saved. Proven can see it now.',
       pay_h: 'Your payments', pay_paid: 'Paid', pay_due: 'Outstanding', pay_next: 'Next payment',
       pay_on: 'Paid {d}', pay_by: 'Due {d}', pay_none: 'No payments recorded yet',
+      ph_h: 'Job photos', ph_none: 'No photos yet',
+      ph_none_sub: 'Progress photos will show up here, day by day.',
+      ph_plan: 'Plans', ph_before: 'Before', ph_during: 'Progress',
+      ph_after: 'Finished', ph_doc: 'Documents',
       upd_h: 'Updates', upd_none: 'No photos or updates yet',
       upd_none_sub: 'Photos of your job will show up here.',
       upd_write: 'Write a comment…', upd_send: 'Send', upd_you: 'You',
@@ -778,6 +786,58 @@
       })));
   }
 
+  /* --- fotos de la obra ---
+     El cliente no sube nada aquí ni decide nada: viene a ver cómo va. Las
+     del avance van partidas por día y el día más reciente primero, porque
+     eso es lo que está mirando. Las demás son un montón, no una línea de
+     tiempo, y no ganan nada con el corte. */
+  var PH_KINDS = ['during', 'after', 'before', 'plan', 'doc'];
+
+  function photosCard(files, urls) {
+    function tile(f) {
+      var u = urls[f.file_path];
+      var esImg = /\.(png|jpe?g|webp|gif|heic|avif)$/i.test(f.file_name || '');
+      if (esImg && u) {
+        return h('a', { class: 'phcard', href: u, target: '_blank', rel: 'noopener noreferrer' },
+          h('img', { src: u, alt: f.title || f.file_name || '', loading: 'lazy' }));
+      }
+      /* Un PDF o un plano no se puede mostrar en miniatura: queda el
+         nombre, que es lo único que ayuda a decidir si abrirlo. */
+      if (!u) return null;
+      return h('a', { class: 'phcard doc', href: u, target: '_blank', rel: 'noopener noreferrer' },
+        h('span', null, f.title || f.file_name || t('ph_' + f.kind)));
+    }
+
+    function dia(f) { return f.taken_on || String(f.created_at || '').slice(0, 10); }
+
+    var grupos = [];
+    PH_KINDS.forEach(function (k) {
+      var mios = files.filter(function (f) { return f.kind === k; });
+      if (!mios.length) return;
+      if (k !== 'during') {
+        grupos.push(h('div', { class: 'phsec' },
+          h('div', { class: 'selgrp' }, t('ph_' + k)),
+          h('div', { class: 'phgrid' }, mios.map(tile))));
+        return;
+      }
+      var dias = {};
+      mios.forEach(function (f) { var d = dia(f); (dias[d] = dias[d] || []).push(f); });
+      Object.keys(dias).sort().reverse().forEach(function (d) {
+        grupos.push(h('div', { class: 'phsec' },
+          h('div', { class: 'selgrp' }, d
+            ? fDate(d + 'T12:00:00', { weekday: 'long', month: 'short', day: 'numeric' })
+            : t('ph_during')),
+          h('div', { class: 'phgrid' }, dias[d].map(tile))));
+      });
+    });
+
+    return h('section', { class: 'card' },
+      h('h3', null, t('ph_h')),
+      grupos.length ? grupos
+        : h('div', { class: 'empty' },
+            h('p', null, t('ph_none')), h('small', null, t('ph_none_sub'))));
+  }
+
   /* --- avances y fotos --- */
   function updatesCard(msgs, urls, project, reload) {
     var txt = h('textarea', { rows: 2, placeholder: t('upd_write'), 'aria-label': t('upd_write') });
@@ -839,13 +899,21 @@
            pasa nada: la tarjeta simplemente no sale. */
         sb.from('documents').select('*').eq('project_id', project.id)
           .then(function (r) { return r.error ? { data: [] } : r; },
+                function () { return { data: [] }; }),
+        /* Las fotos de la obra. Igual que arriba: si la tabla todavía no
+           existe, la tarjeta simplemente no sale. El filtro for_client es
+           el interruptor "Lo ve el cliente" del portal del equipo. */
+        sb.from('project_files').select('*')
+          .eq('project_id', project.id).eq('for_client', true)
+          .then(function (r) { return r.error ? { data: [] } : r; },
                 function () { return { data: [] }; })
       ]);
     }).then(function (res) {
       if (!res) return;
       var phases = res[0].data || [], sels = res[1].data || [],
           pays = res[2].data || [], msgs = res[3].data || [],
-          docs = (res[5] && res[5].data) || [];
+          docs = (res[5] && res[5].data) || [],
+          fotos = (res[6] && res[6].data) || [];
       /* las opciones, agrupadas por selección */
       var opts = {};
       (res[4].data || []).forEach(function (o) {
@@ -854,6 +922,7 @@
       var paths = msgs.map(function (m) { return m.file_path; })
         .concat((res[4].data || []).map(function (o) { return o.photo_path; }))
         .concat(docs.map(function (d) { return d.pdf_path; }))
+        .concat(fotos.map(function (f) { return f.file_path; }))
         .filter(Boolean);
       var p = paths.length
         ? sb.storage.from('project-files').createSignedUrls(paths, 3600)
@@ -872,6 +941,7 @@
           heroCard(project, phases),
           pendiente ? dcard : null,
           selectionsCard(sels, opts, urls, load),
+          fotos.length ? photosCard(fotos, urls) : null,
           paymentsCard(pays),
           pendiente ? null : dcard,
           updatesCard(msgs, urls, project, load),
