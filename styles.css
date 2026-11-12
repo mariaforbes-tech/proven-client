@@ -323,3 +323,22 @@ main{max-width:var(--max);margin:0 auto;padding:18px 16px 70px;display:grid;gap:
   .phgrid{grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:7px}
   .phcard img{height:118px}
 }
+
+/* --- carta de electrodomesticos ---
+   El render de la cocina arriba, y debajo los cuatro grupos de a dos.
+   La escogida se marca igual que una opcion normal para que el cliente
+   reconozca el patron sin aprender nada nuevo. */
+.setph{display:block;width:100%;max-height:320px;object-fit:cover;
+  border:1px solid var(--hair);border-radius:var(--r2)}
+.setnote{margin:0;font-size:.86rem;font-weight:600;color:var(--ink)}
+.setnote.mut{font-weight:400;font-size:.78rem;color:var(--mut)}
+.setgrid{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.setopt{display:flex;padding:12px;border:1px solid var(--hair);
+  border-radius:var(--r2);background:#fff}
+.setopt.on{border-color:var(--ok);background:var(--okbg)}
+.setopt b{font-size:.95rem;line-height:1.25}
+.setopt small{color:var(--mut);font-size:.82rem;line-height:1.35}
+@media (max-width:520px){
+  .setph{max-height:220px}
+  .setgrid{grid-template-columns:1fr}
+}

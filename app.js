@@ -37,6 +37,10 @@
       pal_pick: 'Escoger color', pal_change: 'Cambiar', pal_back: 'Atrás',
       pal_sub: 'Toca un color para este espacio.',
       pal_saved: 'Listo, color guardado.',
+      set_pick: 'Ver y escoger', set_saved: 'Guardado.',
+      set_sub: 'Escoge uno de cada grupo.',
+      set_left: 'Falta {n} por escoger.', set_done: 'Listo, los cuatro escogidos.',
+      set_prices: 'Precios de Home Depot al 11 de noviembre. El precio final se confirma el día de la compra.',
       opt_none: 'Todavía no hay opciones cargadas', opt_none_sub: 'Proven las está armando. Si ya sabes qué quieres, propónla tú.',
       opt_mine: 'Propuesta tuya', opt_over: '{m} sobre el presupuesto', opt_under: '{m} por debajo',
       opt_own_h: '¿Ninguna te convence?', opt_own_b: 'Proponer la mía',
@@ -103,6 +107,10 @@
       pal_pick: 'Choose color', pal_change: 'Change', pal_back: 'Back',
       pal_sub: 'Tap a color for this space.',
       pal_saved: 'Saved.',
+      set_pick: 'See and choose', set_saved: 'Saved.',
+      set_sub: 'Pick one from each group.',
+      set_left: '{n} still to choose.', set_done: 'All four chosen.',
+      set_prices: 'Home Depot prices as of November 11. The final price is confirmed on the day of purchase.',
       opt_none: 'No options loaded yet', opt_none_sub: 'Proven is putting them together. If you already know what you want, suggest it.',
       opt_mine: 'Your suggestion', opt_over: '{m} over budget', opt_under: '{m} under',
       opt_own_h: 'None of these work?', opt_own_b: 'Suggest my own',
@@ -399,6 +407,60 @@
   var PALETA_BEHR = [{g:'Whites',c:[['Ultra Pure White','UPW','#F8F9F3'],['Sleek White','OR-W15','#FAF6E9'],['White Veil','OR-W14','#F7F1E3'],['Linen White','70','#F7EDD8'],['Cotton Sheets','RD-W15','#F7EBDD'],['Polar Bear','75','#F5F4EC'],['Simply White','BWC-01','#F5F1E4'],['Whisper White','HDC-MD-08','#F4F3EA'],['Bit of Sugar','PR-W14','#F4F2EC'],['Palais White','GR-W15','#F4F0E5'],['Delicate Lace','PPU5-11','#F3E6D4'],['Cottage White','13','#F3E9D6'],['New House White','RD-W10','#F1EDE7'],['Swiss Coffee','12','#F1EDE0'],['Bakery Box','BL-W09','#F0F4F2'],['Frost','57','#EFF0EC'],['Silky White','PPU7-12','#EEEBE2'],['White','52','#EBEBE6'],['Navajo White','22','#EBDEC4'],['Cameo White','MQ3-32','#EBE8E2'],['Vibrant White','BWC-12','#EAEDEB'],['Smoky White','BWC-13','#E9E4DA'],['Antique White','23','#E8DDCA'],['Off White','73','#E7E2D2'],['White Mocha','OR-W11','#E7DCCC'],['Swirling Water','PR-W10','#E6E9E9'],['Painter\'s White','PPU18-08','#E5E2DA'],['Cotton Knit','PPU7-11','#E5DFD2'],['Winds Breath','GR-W06','#E0E1DA'],['Silver Ash','GR-W11','#DDDBD0'],['Spanish Sand','OR-W07','#DCD0BD']]},{g:'Light greys',c:[['Silver Feather','BWC-29','#DBDCD3'],['Drizzle','PPU26-14','#D9DCDB'],['Gray View','DC-014','#D3D1C8'],['Platinum','PPU26-11','#D1D4D1'],['White Metal','N520-1','#D1D1CF'],['Chic Gray','PPU26-10','#CFCCC5'],['Dolphin Fin','790C-3','#CCCAC1'],['Silver Bullet','N520-2','#C5C5C3'],['Natural Gray','PPU18-10','#C4C0BB'],['Grey Mist','HDC-CT-21','#BDB6AB'],['Classic Silver','PPU18-11','#B9B9B4'],['Lunar Surface','N460-3','#B6B9B6'],['Flannel Gray','N520-3','#AEADAC'],['Tin Foil','N500-3','#ACB0B0'],['Elemental Gray','PPU26-06','#A0A09F']]},{g:'Warm neutrals',c:[['Roman Plaster','PPU7-10','#DDD2BF'],['Loft Light','MQ3-09','#DCCAB7'],['Plateau','PPU4-08','#DBC4AA'],['Dove','HDC-MD-21','#D9D4CB'],['Baja','PPU7-08','#D2C1A8'],['Wheat Bread','720C-3','#CDC4B7'],['Sculptor Clay','PPU5-08','#CCC3B4'],['Creamy Mushroom','PPU5-13','#CABDAE'],['Basswood','MQ2-46','#C9B196'],['Riviera Beach','PPU7-07','#C0AE96'],['Smokestack','N220-3','#BEB2A5'],['Perfect Taupe','PPU18-13','#B6ACA0'],['Midtown','MQ2-47','#B5A18A'],['Rustic Taupe','N200-4','#A69C91'],['Fashion Gray','PPU18-15','#A29C94']]}];
   var PALETAS = { 'behr-light': PALETA_BEHR };
 
+  /* --- electrodomésticos ---
+     Dos acabados, y dentro de cada uno cuatro grupos con dos opciones.
+     El cliente escoge uno por grupo, no uno entre ocho.
+
+     g = grupo (va en lo que se guarda, por eso corto), h = título visible,
+     n = modelo, d = la línea chica, p = precio de hoy, u = link.
+     Precios de Home Depot del 11 de noviembre de 2026. */
+  var SETS = {
+    'app-white': [
+      { g: 'Fridge', h: 'Refrigerator', o: [
+        { n: 'Whirlpool WRS321SDHW', d: '21.4 cu ft side-by-side · 32¾" wide · water and ice in the door',
+          p: 1649, u: 'https://www.homedepot.com/p/Whirlpool-21-4-cu-ft-Side-by-Side-Refrigerator-in-White-WRS321SDHW/302895657' },
+        { n: 'GE GSS23GGPWW', d: '23.0 cu ft side-by-side · 32¾" wide · water and ice in the door',
+          p: 1899, u: 'https://www.homedepot.com/p/318378035' } ] },
+      { g: 'Range', h: 'Range (gas)', o: [
+        { n: 'Frigidaire FCRG3052BW', d: '30" · 5 burners · Quick Boil',
+          p: 799, u: 'https://www.homedepot.com/p/Frigidaire-30-in-5-Burner-Freestanding-Gas-Range-in-White-with-Quick-Boil-and-Even-Baking-Technology-FCRG3052BW/341304657' },
+        { n: 'GE JGBS66DEKWW', d: '30" · 5.0 cu ft · comes with a griddle',
+          p: 829, u: 'https://www.homedepot.com/p/GE-30-in-5-0-cu-ft-Freestanding-Gas-Range-in-White-with-Griddle-JGBS66DEKWW/206943089' } ] },
+      { g: 'Microwave', h: 'Microwave (over the range)', o: [
+        { n: 'Frigidaire FMOS1846BW', d: '30" · 1.8 cu ft · 300 CFM vent',
+          p: 299, u: 'https://www.homedepot.com/p/Frigidaire-30-in-Width-1-8-cu-ft-1000-Watt-Over-the-Range-Microwave-with-Charcoal-Filter-300-CFM-in-White-FMOS1846BW/322177968' },
+        { n: 'GE JVM3160DFWW', d: '30" · 1.6 cu ft',
+          p: 239, u: 'https://www.homedepot.com/p/GE-1-6-cu-ft-Over-the-Range-Microwave-in-White-JVM3160DFWW/204394353' } ] },
+      { g: 'Dishwasher', h: 'Dishwasher', o: [
+        { n: 'Frigidaire FDPC4314AW', d: '24" built-in · tall tub · DishSense',
+          p: 399, u: 'https://www.homedepot.com/p/Frigidaire-24-in-Front-Control-Built-In-Tall-Tub-Dishwasher-in-White-with-4-cycles-and-DishSense-Sensor-Technology-FDPC4314AW/326273930' },
+        { n: 'Whirlpool WDF341PAPW', d: '24" built-in · tall tub · 4 cycles',
+          p: 429, u: 'https://www.homedepot.com/p/Whirlpool-24-in-Front-Built-In-Tall-Tub-Dishwasher-in-White-with-4-Cycles-WDF341PAPW/326601442' } ] }
+    ],
+    'app-ss': [
+      { g: 'Fridge', h: 'Refrigerator', o: [
+        { n: 'Whirlpool WRS321SDHZ', d: '21.4 cu ft side-by-side · 32¾" wide · fingerprint resistant',
+          p: 1499, u: 'https://www.homedepot.com/p/Whirlpool-21-4-cu-ft-Side-by-Side-Refrigerator-in-Fingerprint-Resistant-Stainless-Finish-WRS321SDHZ/302786603' },
+        { n: 'GE GSS23GYPFS', d: '23.0 cu ft side-by-side · 32¾" wide · fingerprint resistant',
+          p: 1799, u: 'https://www.homedepot.com/p/GE-23-0-cu-ft-Side-by-Side-Refrigerator-in-Fingerprint-Resistant-Stainless-Steel-Standard-Depth-GSS23GYPFS/317987122' } ] },
+      { g: 'Range', h: 'Range (gas)', o: [
+        { n: 'Frigidaire FCRG3052BS', d: '30" · 5 burners · Quick Boil',
+          p: 749, u: 'https://www.homedepot.com/p/Frigidaire-30-in-5-Burner-Freestanding-Gas-Range-in-Stainless-Steel-with-Quick-Boil-and-Even-Baking-Technology-FCRG3052BS/341304656' },
+        { n: 'GE JGBS66REKSS', d: '30" · 5.0 cu ft · comes with a griddle',
+          p: 799, u: 'https://www.homedepot.com/p/GE-30-in-5-0-cu-ft-Freestanding-Gas-Range-in-Stainless-Steel-with-Griddle-30-in-5-0-cu-ft-Freestan-JGBS66REKSS/206943135' } ] },
+      { g: 'Microwave', h: 'Microwave (over the range)', o: [
+        { n: 'Whirlpool WMH31017HS', d: '30" · 1.7 cu ft · touch controls',
+          p: 239, u: 'https://www.homedepot.com/p/Whirlpool-1-7-cu-ft-Over-the-Range-Microwave-in-Stainless-Steel-with-Electronic-Touch-Controls-WMH31017HS/302264764' },
+        { n: 'Frigidaire FMOS1846BS', d: '30" · 1.8 cu ft · 300 CFM vent',
+          p: 299, u: 'https://www.homedepot.com/p/Frigidaire-1-8-Cu-Ft-Over-The-Range-Microwave-in-Stainless-Steel-FMOS1846BS/322177903' } ] },
+      { g: 'Dishwasher', h: 'Dishwasher', o: [
+        { n: 'Frigidaire FDPC4314AS', d: '24" built-in · tall tub · DishSense',
+          p: 399, u: 'https://www.homedepot.com/p/Frigidaire-24-in-Front-Control-Built-In-Tall-Tub-Dishwasher-in-Stainless-Steel-with-4-cycles-and-DishSense-Sensor-Technology-FDPC4314AS/326273819' },
+        { n: 'Whirlpool WDF341PAPM', d: '24" built-in · tall tub · 57 dBA',
+          p: 429, u: 'https://www.homedepot.com/p/Whirlpool-24-in-Front-Built-In-Tall-Tub-57-dBA-Dishwasher-in-Stainless-Steel-with-4-Cycles-WDF341PAPM/326522572' } ] }
+    ]
+  };
+
   function selectionsCard(sels, opts, urls, reload) {
     /* Una selección está lista para decidir solo cuando ya tiene opciones cargadas.
        Sin opciones el cliente no puede escoger nada: eso no es un pendiente suyo,
@@ -450,7 +512,7 @@
            y confundir las dos cosas delante del cliente sale caro. */
         var up = !!(o.extra && String(o.extra).trim());
         return h('div', { class: 'opt' + (picked ? ' on' : '') + (up ? ' up' : '') },
-          o.photo_path && urls[o.photo_path]
+          (o.photo_path && urls[o.photo_path] && !o.palette)
             ? h('img', { class: 'oph zoom', src: urls[o.photo_path], alt: L(o, 'title'),
                 loading: 'lazy', tabindex: '0', role: 'button', title: t('opt_zoom'),
                 onclick: function () { bigPhoto(urls[o.photo_path], L(o, 'title')); },
@@ -472,7 +534,10 @@
             priceTag(o),
             o.palette && o.choice
               ? h('div', { class: 'ochoice' },
-                  h('span', { class: 'osw', style: 'background:' + (hexDe(o.palette, o.choice) || '#ccc') }),
+                  /* El cuadrito de color solo tiene sentido si lo que se
+                     escogió ES un color. Un refrigerador no tiene swatch. */
+                  SETS[o.palette] ? null
+                    : h('span', { class: 'osw', style: 'background:' + (hexDe(o.palette, o.choice) || '#ccc') }),
                   h('span', null, o.choice))
               : null,
             h('div', { class: 'oact' },
@@ -480,8 +545,10 @@
               /* Una opción con carta no se escoge: se le escoge un color
                  adentro. El botón abre la carta, no decide nada todavía. */
               o.palette ? h('button', { class: 'btn sm' + (o.choice ? ' ghost' : ''), type: 'button',
-                  onclick: function () { abrirCarta(o); } },
-                  o.choice ? t('pal_change') : t('pal_pick'))
+                  onclick: function () {
+                    if (SETS[o.palette]) abrirSet(o); else abrirCarta(o);
+                  } },
+                  o.choice ? t('pal_change') : (SETS[o.palette] ? t('set_pick') : t('pal_pick')))
                 : o.reference ? h('span', { class: 'chip mut' }, t('opt_ref'))
                 : picked ? h('span', { class: 'chip ok' }, t('opt_picked'))
                 : h('button', { class: 'btn sm', type: 'button', onclick: function (e) {
@@ -538,6 +605,99 @@
                 h('h5', null, g.g),
                 h('div', { class: 'palgrid' }, g.c.map(chip)));
             })),
+            h('div', { class: 'palfoot' },
+              h('button', { class: 'btn ghost sm', type: 'button', onclick: cerrar }, t('pal_back')))));
+
+        document.addEventListener('keydown', esc);
+        document.body.appendChild(back);
+      }
+
+      /* --- la carta de electrodomésticos ---
+         Son cuatro decisiones dentro de una sola opción, así que la carta
+         no se cierra al escoger: se queda abierta hasta que el cliente
+         termine los cuatro grupos. Lo escogido se guarda como una sola
+         línea, "Fridge: X · Range: Y · …", porque eso es lo que la obra
+         necesita leer después. */
+      function partes(txt) {
+        var m = {};
+        String(txt || '').split(' · ').forEach(function (p) {
+          var i = p.indexOf(': ');
+          if (i > 0) m[p.slice(0, i)] = p.slice(i + 2);
+        });
+        return m;
+      }
+
+      function abrirSet(o) {
+        var grupos = SETS[o.palette] || [];
+        var sel = partes(o.choice);
+        var body = h('div', { class: 'palbody' });
+
+        function cerrar() {
+          back.remove(); document.removeEventListener('keydown', esc);
+          /* Recargar al salir y no en cada clic: si no, la lista de abajo
+             se rearma debajo de la carta abierta. */
+          m.close(); reload();
+        }
+        function esc(e) { if (e.key === 'Escape') cerrar(); }
+
+        function linea() {
+          return grupos.map(function (g) {
+            return sel[g.g] ? g.g + ': ' + sel[g.g] : null;
+          }).filter(Boolean).join(' · ');
+        }
+
+        function tarjeta(g, a) {
+          var mio = sel[g.g] === a.n;
+          return h('div', { class: 'setopt' + (mio ? ' on' : '') },
+            h('div', { class: 'ob' },
+              h('b', null, a.n),
+              h('small', null, a.d),
+              h('div', { class: 'oprice' }, h('b', null, money(a.p))),
+              h('div', { class: 'oact' },
+                h('a', { class: 'lnk', href: a.u, target: '_blank', rel: 'noopener noreferrer' }, t('opt_see')),
+                mio ? h('span', { class: 'chip ok' }, t('opt_picked'))
+                  : h('button', { class: 'btn sm', type: 'button', onclick: function (e) {
+                      var b = e.currentTarget;
+                      busy(b, true);
+                      var antes = sel[g.g];
+                      sel[g.g] = a.n;
+                      sb.rpc('client_set_option_choice', {
+                        p_option: o.id, p_choice: linea()
+                      }).then(function (r) {
+                        if (r.error) {
+                          sel[g.g] = antes; busy(b, false);
+                          toast(r.error.message || t('err'), true); return;
+                        }
+                        o.choice = linea();
+                        pintar();
+                        toast(t('set_saved'));
+                      });
+                    } }, t('opt_pick')))));
+        }
+
+        function pintar() {
+          var falta = grupos.filter(function (g) { return !sel[g.g]; }).length;
+          fill(body,
+            (o.photo_path && urls[o.photo_path])
+              ? h('img', { class: 'setph', src: urls[o.photo_path], alt: L(o, 'title'), loading: 'lazy' })
+              : null,
+            h('p', { class: 'setnote' }, falta ? t('set_left', { n: falta }) : t('set_done')),
+            grupos.map(function (g) {
+              return h('div', { class: 'palgrp' },
+                h('h5', null, g.h),
+                h('div', { class: 'setgrid' }, g.o.map(function (a) { return tarjeta(g, a); })));
+            }),
+            h('p', { class: 'setnote mut' }, t('set_prices')));
+        }
+
+        pintar();
+
+        var back = h('div', { class: 'cmpback', onclick: function (e) { if (e.target === back) cerrar(); } },
+          h('div', { class: 'cmpbox palbox', role: 'dialog', 'aria-modal': 'true' },
+            h('div', { class: 'cmph' },
+              h('div', null, h('b', null, L(o, 'title')), h('small', null, t('set_sub'))),
+              h('button', { class: 'x', type: 'button', 'aria-label': t('close'), onclick: cerrar }, '×')),
+            body,
             h('div', { class: 'palfoot' },
               h('button', { class: 'btn ghost sm', type: 'button', onclick: cerrar }, t('pal_back')))));
 
