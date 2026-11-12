@@ -37,6 +37,7 @@
       pal_pick: 'Escoger color', pal_change: 'Cambiar', pal_back: 'Atrás',
       pal_sub: 'Toca un color para este espacio.',
       pal_saved: 'Listo, color guardado.',
+      opt_undo: 'Deshacer', opt_undone: 'Listo, lo quitamos.',
       set_pick: 'Ver y escoger', set_saved: 'Guardado.',
       set_sub: 'Escoge uno de cada grupo.',
       set_left: 'Falta {n} por escoger.', set_done: 'Listo, los cuatro escogidos.',
@@ -107,6 +108,7 @@
       pal_pick: 'Choose color', pal_change: 'Change', pal_back: 'Back',
       pal_sub: 'Tap a color for this space.',
       pal_saved: 'Saved.',
+      opt_undo: 'Undo', opt_undone: 'Removed.',
       set_pick: 'See and choose', set_saved: 'Saved.',
       set_sub: 'Pick one from each group.',
       set_left: '{n} still to choose.', set_done: 'All four chosen.',
@@ -505,6 +507,30 @@
         });
       }
 
+      /* Deshacer. Una decisión que no se puede soltar deja de ser una
+         decisión: el cliente deja de tocar el portal por miedo a
+         equivocarse. Lo único que no se deshace desde aquí es lo que ya
+         se pidió, porque el material ya se compró. */
+      var cerrado = s.status === 'ordered';
+
+      function desescoger(btn) {
+        busy(btn, true);
+        sb.rpc('client_unpick_option', { p_sel: s.id }).then(function (r) {
+          if (r.error) { busy(btn, false); toast(r.error.message || t('err'), true); return; }
+          m.close(); toast(t('opt_undone')); reload();
+        });
+      }
+
+      function borrarChoice(o, btn, linea) {
+        busy(btn, true);
+        sb.rpc('client_set_option_choice', {
+          p_option: o.id, p_choice: linea == null ? '' : linea
+        }).then(function (r) {
+          if (r.error) { busy(btn, false); toast(r.error.message || t('err'), true); return; }
+          m.close(); toast(t('opt_undone')); reload();
+        });
+      }
+
       function card(o) {
         var picked = s.chosen_option_id === o.id;
         /* "extra" es el sobrecosto en palabras: '+$303 per door'. Va aparte del
@@ -544,13 +570,24 @@
               o.link ? h('a', { class: 'lnk', href: o.link, target: '_blank', rel: 'noopener noreferrer' }, t('opt_see')) : null,
               /* Una opción con carta no se escoge: se le escoge un color
                  adentro. El botón abre la carta, no decide nada todavía. */
-              o.palette ? h('button', { class: 'btn sm' + (o.choice ? ' ghost' : ''), type: 'button',
-                  onclick: function () {
-                    if (SETS[o.palette]) abrirSet(o); else abrirCarta(o);
-                  } },
-                  o.choice ? t('pal_change') : (SETS[o.palette] ? t('set_pick') : t('pal_pick')))
+              o.palette ? [
+                  h('button', { class: 'btn sm' + (o.choice ? ' ghost' : ''), type: 'button',
+                    onclick: function () {
+                      if (SETS[o.palette]) abrirSet(o); else abrirCarta(o);
+                    } },
+                    o.choice ? t('pal_change') : (SETS[o.palette] ? t('set_pick') : t('pal_pick'))),
+                  (o.choice && !cerrado)
+                    ? h('button', { class: 'btn sm ghost', type: 'button', onclick: function (e) {
+                        borrarChoice(o, e.currentTarget);
+                      } }, t('opt_undo'))
+                    : null ]
                 : o.reference ? h('span', { class: 'chip mut' }, t('opt_ref'))
-                : picked ? h('span', { class: 'chip ok' }, t('opt_picked'))
+                : picked ? [
+                    h('span', { class: 'chip ok' }, t('opt_picked')),
+                    cerrado ? null
+                      : h('button', { class: 'btn sm ghost', type: 'button', onclick: function (e) {
+                          desescoger(e.currentTarget);
+                        } }, t('opt_undo')) ]
                 : h('button', { class: 'btn sm', type: 'button', onclick: function (e) {
                     pick(o, e.currentTarget);
                   } }, t('opt_pick')))));
@@ -655,7 +692,25 @@
               h('div', { class: 'oprice' }, h('b', null, money(a.p))),
               h('div', { class: 'oact' },
                 h('a', { class: 'lnk', href: a.u, target: '_blank', rel: 'noopener noreferrer' }, t('opt_see')),
-                mio ? h('span', { class: 'chip ok' }, t('opt_picked'))
+                mio ? [
+                    h('span', { class: 'chip ok' }, t('opt_picked')),
+                    h('button', { class: 'btn sm ghost', type: 'button', onclick: function (e) {
+                      var b = e.currentTarget;
+                      busy(b, true);
+                      var antes = sel[g.g];
+                      delete sel[g.g];
+                      sb.rpc('client_set_option_choice', {
+                        p_option: o.id, p_choice: linea()
+                      }).then(function (r) {
+                        if (r.error) {
+                          sel[g.g] = antes; busy(b, false);
+                          toast(r.error.message || t('err'), true); return;
+                        }
+                        o.choice = linea();
+                        pintar();
+                        toast(t('opt_undone'));
+                      });
+                    } }, t('opt_undo')) ]
                   : h('button', { class: 'btn sm', type: 'button', onclick: function (e) {
                       var b = e.currentTarget;
                       busy(b, true);
